@@ -65,6 +65,8 @@ maybe_error_t maybe_logger_init(
  * @param format The message format
  *
  * @note The rest of the arguments are dependant of the format
+ * 
+ * @note The logger currently only supports up to 10 arguments and 30 argument references
  * */
 maybe_error_t maybe_logger_write(
 	maybe_logger_t* logger,
