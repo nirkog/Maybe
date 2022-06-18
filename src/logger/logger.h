@@ -71,6 +71,6 @@ maybe_error_t maybe_logger_init(
 maybe_error_t maybe_logger_write(
 	maybe_logger_t* logger,
 	void* params,
-	uint8_t* format,
+	const char* format,
 	...
 );

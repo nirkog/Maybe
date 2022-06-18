@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "logger.h"
 #include "logger_internal.h"
@@ -46,7 +47,7 @@ l_cleanup:
 maybe_error_t maybe_logger_write(
 	maybe_logger_t* logger,
 	void* params,
-	uint8_t* format,
+	const char* format,
 	...
 ) {
 	maybe_error_t result = MAYBE_ERROR_UNINITIALIZED;
@@ -58,7 +59,7 @@ maybe_error_t maybe_logger_write(
 	va_start(args, format);
 
 	/* Format the message string */
-	format_result = format_string(format, strlen((const char*)format), &formatted_message, &formatted_message_size, args);
+	format_result = format_string((uint8_t*)format, strlen((const char*)format), &formatted_message, &formatted_message_size, args);
 	if (!format_result) {
 		result = MAYBE_ERROR_LOGGER_FORMAT_FAILED;
 		goto l_cleanup;
@@ -77,27 +78,19 @@ l_cleanup:
 	return result;
 }
 
-bool format_string(
+bool retrieve_argument_references(
 	uint8_t* format,
 	uint32_t size,
-	uint8_t** formatted_string,
-	uint32_t* formatted_string_size,
-	va_list args
+	argument_refernce_t* references,
+	uint8_t* argument_types,
+	uint8_t* argument_count,
+	uint32_t* new_size
 ) {
 	bool result = false;
-	uint32_t i, new_size = size;
-	uint8_t* _formatted_string = NULL;
 	uint8_t reference_count = 0;
-	uint8_t current_reference = 0;
-	uint8_t* formatted_string_pointer = NULL;
-	uint8_t argument_count = 0;
-	uint32_t int_argument_values[MAX_FORMAT_ARGUMENT_COUNT] = { 0 };
-	double float_argument_values[MAX_FORMAT_ARGUMENT_COUNT] = { 0.0f };
-	uint8_t types[MAX_FORMAT_ARGUMENT_COUNT] = { 0 };
-	argument_refernce_t references[MAX_FORMAT_ARGUMENT_REFERENCE_COUNT] = { { 0 } };
+	uint32_t i;
 
 	/* @TODO Handle edge cases */
-	/* @TODO Export this to a function */
 	for (i = 0; i < size; i++) {
 		if (format[i] == '{') {
 			if ((i == 0) || (format[i - 1] != '\\')) {
@@ -109,10 +102,10 @@ bool format_string(
 				references[reference_count].type = format[i + 2];
 				references[reference_count].position = i;
 
-				types[references[reference_count].index] = references[reference_count].type;
+				argument_types[references[reference_count].index] = references[reference_count].type;
 
-				if ((references[reference_count].index + 1) > argument_count) {
-					argument_count = references[reference_count].index + 1;
+				if ((references[reference_count].index + 1) > *argument_count) {
+					*argument_count = references[reference_count].index + 1;
 				}
 
 				switch (references[reference_count].type) {
@@ -120,7 +113,10 @@ bool format_string(
 					new_size += 5;
 					break;
 				case 'f':
-					new_size += 10;
+					new_size += 15;
+					break;
+				case 'l':
+					new_size += 20;
 					break;
 				default:
 					goto l_cleanup;
@@ -135,6 +131,70 @@ bool format_string(
 		}
 	}
 
+	result = true;
+l_cleanup:
+	return result;
+}
+
+void replace_argument_references_with_values(
+	uint8_t* format,
+	uint32_t size,
+	argument_refernce_t* references,
+	uint8_t* formatted_string,
+	uint32_t* int_argument_values,
+	uint64_t* long_argument_values,
+	double* float_argument_values
+) {
+	uint32_t i;
+	uint8_t current_reference = 0;
+
+	for (i = 0; i < size; i++) {
+		if (i == references[current_reference].position) {
+			switch (references[current_reference].type) {
+			case 'i':
+				formatted_string += sprintf((char*)formatted_string, "%d", (int)int_argument_values[references[current_reference].index]);
+				break;
+			case 'f':
+				formatted_string += sprintf((char*)formatted_string, "%f", (float)float_argument_values[references[current_reference].index]);
+				break;
+			case 'l':
+				formatted_string += sprintf((char*)formatted_string, "%lld", (long long)long_argument_values[references[current_reference].index]);
+				break;
+			}
+			
+			i += 3;
+			current_reference++;
+		} else {
+			*formatted_string = format[i];
+			formatted_string++;
+		}
+	}
+}
+
+bool format_string(
+	uint8_t* format,
+	uint32_t size,
+	uint8_t** formatted_string,
+	uint32_t* formatted_string_size,
+	va_list args
+) {
+	bool result = false;
+	uint32_t i, new_size = size;
+	uint8_t* _formatted_string = NULL;
+	uint8_t argument_count = 0;
+	uint32_t int_argument_values[MAX_FORMAT_ARGUMENT_COUNT] = { 0 };
+	uint64_t long_argument_values[MAX_FORMAT_ARGUMENT_COUNT] = { 0 };
+	double float_argument_values[MAX_FORMAT_ARGUMENT_COUNT] = { 0.0f };
+	uint8_t types[MAX_FORMAT_ARGUMENT_COUNT] = { 0 };
+	argument_refernce_t references[MAX_FORMAT_ARGUMENT_REFERENCE_COUNT] = { { 0 } };
+
+	/* @TODO Optimize and tidy this */
+
+	result = retrieve_argument_references(format, size, references, types, &argument_count, &new_size);
+	if (!result) {
+		goto l_cleanup;
+	}
+
 	/* Extract arguments */
 	for (i = 0; i < argument_count; i++) {
 		switch (types[i]) {
@@ -144,35 +204,19 @@ bool format_string(
 		case 'f':
 			float_argument_values[i] = va_arg(args, double);
 			break;
+		case 'l':
+			long_argument_values[i] = va_arg(args, uint64_t);
+			break;
 		default:
 			int_argument_values[i] = va_arg(args, uint32_t);
 			break;
 		}
 	}
 
-	/* @TODO Transfer this to a function */
 	_formatted_string = (uint8_t*)malloc(new_size + 1);
 	_formatted_string[new_size] = '\0';
-	formatted_string_pointer = _formatted_string;
 
-	for (i = 0; i < size; i++) {
-		if (i == references[current_reference].position) {
-			switch (references[current_reference].type) {
-			case 'i':
-				formatted_string_pointer += sprintf(formatted_string_pointer, "%d", (int)int_argument_values[references[current_reference].index]);
-				break;
-			case 'f':
-				formatted_string_pointer += sprintf(formatted_string_pointer, "%f", (float)float_argument_values[references[current_reference].index]);
-				break;
-			}
-			
-			i += 3;
-			current_reference++;
-		} else {
-			*formatted_string_pointer = format[i];
-			formatted_string_pointer++;
-		}
-	}
+	replace_argument_references_with_values(format, size, references, _formatted_string, int_argument_values, long_argument_values, float_argument_values);
 
 	/* Transfer the result */
 	*formatted_string_size = new_size;

@@ -26,3 +26,24 @@ bool format_string(
 	va_list args
 );
 
+/*
+ * @brief Get all references to arguments in a format string
+ * */
+bool retrieve_argument_references(
+	uint8_t* format,
+	uint32_t size,
+	argument_refernce_t* references,
+	uint8_t* argument_types,
+	uint8_t* argument_count,
+	uint32_t* new_size
+);
+
+void replace_argument_references_with_values(
+	uint8_t* format,
+	uint32_t size,
+	argument_refernce_t* references,
+	uint8_t* formatted_string,
+	uint32_t* int_argument_values,
+	uint64_t* long_argument_values,
+	double* float_argument_values
+);
