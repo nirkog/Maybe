@@ -7,10 +7,12 @@ add_library(maybe_lib STATIC
 	src/logger/logger.c
 	src/logger/platforms/console/console_logger.c
 	src/logger/platforms/file/file_logger.c
+	src/time/time.c
 )
 
 target_include_directories(maybe_lib PUBLIC
 	include/
+	src/
 )
 
 target_include_directories(maybe_lib PRIVATE

@@ -11,6 +11,7 @@
 #include "common/common.h"
 #include "platforms/console/console_logger.h"
 #include "platforms/file/file_logger.h"
+#include "time/time.h"
 
 /*
  * @brief The implementations of the current logging platforms
@@ -24,10 +25,10 @@ static maybe_logger_platform_t logger_platforms[] = {
  * @brief The prefix prompts that will appear for every message in a given log level
  * */
 static const char* log_level_prompts[] = {
-	[MAYBE_LOGGER_LOG_LEVEL_DEBUG] 		= "[DEBUG]: ",	
-	[MAYBE_LOGGER_LOG_LEVEL_INFO] 		= "[INFO]: ",	
-	[MAYBE_LOGGER_LOG_LEVEL_WARNING] 	= "[WARNING]: ",	
-	[MAYBE_LOGGER_LOG_LEVEL_ERROR] 		= "[ERROR]: ",	
+	[MAYBE_LOGGER_LOG_LEVEL_DEBUG] 		= "[DEBUG] ",	
+	[MAYBE_LOGGER_LOG_LEVEL_INFO] 		= "[INFO] ",	
+	[MAYBE_LOGGER_LOG_LEVEL_WARNING] 	= "[WARNING] ",	
+	[MAYBE_LOGGER_LOG_LEVEL_ERROR] 		= "[ERROR] ",	
 };
 
 maybe_error_t maybe_logger_init(
@@ -250,6 +251,7 @@ bool format_string(
 	}
 
 	new_size += strlen(log_level_prompts[log_level]); /* Prompt size */
+	new_size += TIME_PROMPT_SIZE; /* Time size */
 	new_size += 1; /* Newline */
 
 	/* Allocate memory for the formatted message */
@@ -260,10 +262,20 @@ bool format_string(
 	memcpy(_formatted_string, log_level_prompts[log_level], strlen(log_level_prompts[log_level]));
 	_formatted_string += strlen(log_level_prompts[log_level]);
 
+	sprintf(
+		(char*)_formatted_string,
+		TIME_PROMPT_FORMAT,
+		(int)(maybe_time_get_time_since_init_minutes() % 100),
+		(int)(maybe_time_get_time_since_init_seconds() % 100),
+		(int)((maybe_time_get_time_since_init_ns() / 100) % 10000)
+	);
+	_formatted_string += TIME_PROMPT_SIZE;
+
 	final_size = replace_argument_references_with_values(format, size, references, reference_count, _formatted_string, int_argument_values, long_argument_values, float_argument_values);
 	_formatted_string[final_size] = '\n';
 	_formatted_string[final_size + 1] = '\0';
 
+	_formatted_string -= TIME_PROMPT_SIZE;
 	_formatted_string -= strlen(log_level_prompts[log_level]);
 
 

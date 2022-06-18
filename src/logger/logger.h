@@ -4,6 +4,8 @@
 
 #include "common/error.h"
 
+/* @TODO Add engine/user specifications */
+
 /*
  * @brief The platform type a logger will output to
  * */

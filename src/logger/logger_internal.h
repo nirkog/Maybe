@@ -9,6 +9,9 @@
 #define MAX_FORMAT_ARGUMENT_REFERENCE_COUNT (30)
 #define MAX_FORMAT_ARGUMENT_COUNT (10)
 
+#define TIME_PROMPT_SIZE (13)
+#define TIME_PROMPT_FORMAT ("[%02d:%02d:%04d] ")
+
 typedef struct {
 	uint32_t position;
 	uint8_t index;
