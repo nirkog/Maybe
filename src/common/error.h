@@ -1,0 +1,8 @@
+#pragma once
+
+typedef enum {
+	MAYBE_ERROR_UNINITIALIZED,
+	MAYBE_ERROR_SUCCESS,
+
+	MAYBE_ERROR_LOGGER_FORMAT_FAILED
+} maybe_error_t;
