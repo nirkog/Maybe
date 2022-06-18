@@ -16,8 +16,8 @@
  * @brief The implementations of the current logging platforms
  * */
 static maybe_logger_platform_t logger_platforms[] = {
-	[MAYBE_LOGGER_PLATFORM_TYPE_FILE] 		= { maybe_logger_platforms_file_init, maybe_logger_platforms_file_write },
-	[MAYBE_LOGGER_PLATFORM_TYPE_CONSOLE] 	= { maybe_logger_platforms_console_init, maybe_logger_platforms_console_write },
+	[MAYBE_LOGGER_PLATFORM_TYPE_FILE] 		= { maybe_logger_platforms_file_init, maybe_logger_platforms_file_write, maybe_logger_platforms_file_free  },
+	[MAYBE_LOGGER_PLATFORM_TYPE_CONSOLE] 	= { maybe_logger_platforms_console_init, maybe_logger_platforms_console_write, maybe_logger_platforms_console_free  },
 };
 
 /*
@@ -79,7 +79,7 @@ maybe_error_t maybe_logger_write(
 		}
 
 		/* Output the message */
-		result = logger_platforms[logger->platform].write(log_level, formatted_message, formatted_message_size, params);
+		result = logger_platforms[logger->platform].write(logger, log_level, formatted_message, formatted_message_size, params);
 		if (IS_FAILURE(result)) {
 			goto l_cleanup;
 		}
@@ -94,6 +94,12 @@ l_cleanup:
 	va_end(args);
 
 	return result;
+}
+
+void maybe_logger_free(
+	maybe_logger_t* logger
+) {
+	logger_platforms[logger->platform].free(logger);
 }
 
 bool retrieve_argument_references(
@@ -269,3 +275,4 @@ bool format_string(
 l_cleanup:
 	return result;
 }
+

@@ -25,6 +25,7 @@ maybe_error_t maybe_logger_platforms_console_init(
 }
 
 maybe_error_t maybe_logger_platforms_console_write(
+	maybe_logger_t* logger,
 	maybe_logger_log_level_t log_level,
 	uint8_t* data,
 	uint32_t size,
@@ -116,4 +117,9 @@ bool get_color_escape_sequence(
 	result = true;
 l_cleanup:
 	return result;
+}
+
+void maybe_logger_platforms_console_free(
+	maybe_logger_t* logger
+) {
 }

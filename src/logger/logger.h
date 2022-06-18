@@ -38,7 +38,8 @@ typedef struct {
  * */
 typedef struct {
 	maybe_error_t (*init)(maybe_logger_t* logger, void* params);
-	maybe_error_t (*write)(maybe_logger_log_level_t log_level, uint8_t* data, uint32_t size, void* params);
+	maybe_error_t (*write)(maybe_logger_t* logger, maybe_logger_log_level_t log_level, uint8_t* data, uint32_t size, void* params);
+	void (*free)(maybe_logger_t* logger);
 } maybe_logger_platform_t;
 
 /*
@@ -75,6 +76,15 @@ maybe_error_t maybe_logger_write(
 	void* params,
 	const char* format,
 	...
+);
+
+/*
+ * @brief Free all used resources by the logger
+ * 
+ * @param logger The logger
+ * */
+void maybe_logger_free(
+	maybe_logger_t* logger
 );
 
 /* @note These are macros that can be used to simplify calling the log functions */
