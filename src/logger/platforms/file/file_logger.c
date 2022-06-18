@@ -13,7 +13,7 @@ maybe_error_t maybe_logger_platforms_file_init(
 }
 
 maybe_error_t maybe_logger_platforms_file_write(
-	maybe_logger_t* logger,
+	maybe_logger_log_level_t log_level,
 	uint8_t* data,
 	uint32_t size,
 	void* params

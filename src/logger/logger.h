@@ -17,7 +17,7 @@ typedef enum {
  * @brief Logger log levels
  * */
 typedef enum {
-	MAYBE_LOGGER_LOG_LEVEL_DEBUG,
+	MAYBE_LOGGER_LOG_LEVEL_DEBUG = 0,
 	MAYBE_LOGGER_LOG_LEVEL_INFO,
 	MAYBE_LOGGER_LOG_LEVEL_WARNING,
 	MAYBE_LOGGER_LOG_LEVEL_ERROR,
@@ -38,7 +38,7 @@ typedef struct {
  * */
 typedef struct {
 	maybe_error_t (*init)(maybe_logger_t* logger, void* params);
-	maybe_error_t (*write)(maybe_logger_t* logger, uint8_t* data, uint32_t size, void* params);
+	maybe_error_t (*write)(maybe_logger_log_level_t log_level, uint8_t* data, uint32_t size, void* params);
 } maybe_logger_platform_t;
 
 /*
@@ -61,6 +61,7 @@ maybe_error_t maybe_logger_init(
  * @brief Write a message using a logger
  *
  * @param logger The logger
+ * @param log_level The message's log level
  * @param params Platform specific write parameters
  * @param format The message format
  *
@@ -70,7 +71,14 @@ maybe_error_t maybe_logger_init(
  * */
 maybe_error_t maybe_logger_write(
 	maybe_logger_t* logger,
+	maybe_logger_log_level_t log_level,
 	void* params,
 	const char* format,
 	...
 );
+
+/* @note These are macros that can be used to simplify calling the log functions */
+#define MAYBE_LOGGER_DEBUG_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_DEBUG, NULL, msg __VA_OPT__(,) __VA_ARGS__);
+#define MAYBE_LOGGER_INFO_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_INFO, NULL, msg __VA_OPT__(,) __VA_ARGS__);
+#define MAYBE_LOGGER_WARNING_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_WARNING, NULL, msg __VA_OPT__(,) __VA_ARGS__);
+#define MAYBE_LOGGER_ERROR_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_ERROR, NULL, msg __VA_OPT__(,) __VA_ARGS__);

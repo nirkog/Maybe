@@ -19,6 +19,7 @@ target_include_directories(maybe_lib PRIVATE
 
 target_compile_options(maybe_lib PRIVATE
 	-Wall
+	-g
 )
 
 add_subdirectory(sandbox)

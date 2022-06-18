@@ -19,6 +19,7 @@ typedef struct {
  * @brief Format a string that is being logged
  * */
 bool format_string(
+	maybe_logger_log_level_t log_level,
 	uint8_t* format,
 	uint32_t size,
 	uint8_t** formatted_string,
@@ -33,15 +34,20 @@ bool retrieve_argument_references(
 	uint8_t* format,
 	uint32_t size,
 	argument_refernce_t* references,
+	uint8_t* reference_count,
 	uint8_t* argument_types,
 	uint8_t* argument_count,
 	uint32_t* new_size
 );
 
-void replace_argument_references_with_values(
+/*
+ * @brief Replace all occurrences of argument references with argument values
+ * */
+uint32_t replace_argument_references_with_values(
 	uint8_t* format,
 	uint32_t size,
 	argument_refernce_t* references,
+	uint8_t reference_count,
 	uint8_t* formatted_string,
 	uint32_t* int_argument_values,
 	uint64_t* long_argument_values,
