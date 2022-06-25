@@ -89,8 +89,34 @@ void maybe_logger_free(
 	maybe_logger_t* logger
 );
 
+/* @TODO This is all confusing and bad, fix it */
+
+extern maybe_logger_t g_maybe_logger;
+
+#define MAYBE_LOGGER_INIT(level, platform, params) maybe_logger_init(&g_maybe_logger, level, platform, params);
+#define MAYBE_LOGGER_FREE() maybe_logger_free(&g_maybe_logger);
+
+#ifdef _MSC_VER
+#define MAYBE_DEBUG_LOG(msg, ...) maybe_logger_write(&g_maybe_logger, MAYBE_LOGGER_LOG_LEVEL_DEBUG, NULL, msg, __VA_ARGS__);
+#define MAYBE_INFO_LOG(msg, ...) maybe_logger_write(&g_maybe_logger, MAYBE_LOGGER_LOG_LEVEL_INFO, NULL, msg, __VA_ARGS__);
+#define MAYBE_WARNING_LOG(msg, ...) maybe_logger_write(&g_maybe_logger, MAYBE_LOGGER_LOG_LEVEL_WARNING, NULL, msg, __VA_ARGS__);
+#define MAYBE_ERROR_LOG(msg, ...) maybe_logger_write(&g_maybe_logger, MAYBE_LOGGER_LOG_LEVEL_ERROR, NULL, msg, __VA_ARGS__);
+#else
+#define MAYBE_DEBUG_LOG(msg, ...) maybe_logger_write(&g_maybe_logger, MAYBE_LOGGER_LOG_LEVEL_DEBUG, NULL, msg __VA_OPT__(,) __VA_ARGS__);
+#define MAYBE_INFO_LOG(msg, ...) maybe_logger_write(&g_maybe_logger, MAYBE_LOGGER_LOG_LEVEL_INFO, NULL, msg __VA_OPT__(,) __VA_ARGS__);
+#define MAYBE_WARNING_LOG(msg, ...) maybe_logger_write(&g_maybe_logger, MAYBE_LOGGER_LOG_LEVEL_WARNING, NULL, msg __VA_OPT__(,) __VA_ARGS__);
+#define MAYBE_ERROR_LOG(msg, ...) maybe_logger_write(&g_maybe_logger, MAYBE_LOGGER_LOG_LEVEL_ERROR, NULL, msg __VA_OPT__(,) __VA_ARGS__);
+#endif
+
 /* @note These are macros that can be used to simplify calling the log functions */
+#ifdef _MSC_VER
+#define MAYBE_LOGGER_DEBUG_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_DEBUG, NULL, msg, __VA_ARGS__);
+#define MAYBE_LOGGER_INFO_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_INFO, NULL, msg, __VA_ARGS__);
+#define MAYBE_LOGGER_WARNING_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_WARNING, NULL, msg, __VA_ARGS__);
+#define MAYBE_LOGGER_ERROR_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_ERROR, NULL, msg, __VA_ARGS__);
+#else
 #define MAYBE_LOGGER_DEBUG_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_DEBUG, NULL, msg __VA_OPT__(,) __VA_ARGS__);
 #define MAYBE_LOGGER_INFO_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_INFO, NULL, msg __VA_OPT__(,) __VA_ARGS__);
 #define MAYBE_LOGGER_WARNING_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_WARNING, NULL, msg __VA_OPT__(,) __VA_ARGS__);
 #define MAYBE_LOGGER_ERROR_WRITE(logger, msg, ...) maybe_logger_write(logger, MAYBE_LOGGER_LOG_LEVEL_ERROR, NULL, msg __VA_OPT__(,) __VA_ARGS__);
+#endif

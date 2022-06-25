@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/maybe_sandbox.dir/src/main.c.o -o maybe_sandbox  ../libmaybe_lib.a 

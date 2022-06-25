@@ -10,3 +10,8 @@ target_link_libraries(maybe_sandbox PRIVATE
 	maybe_lib
 )
 
+target_compile_options(maybe_sandbox PRIVATE
+	-Wall
+	-g
+)
+

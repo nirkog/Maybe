@@ -1,23 +1,46 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 #include "logger/logger.h"
 #include "time/time.h"
+#include "common/map/map.h"
 
-extern int application_init(maybe_logger_t* logger);
+extern int application_init();
 
 int main() {
-	maybe_logger_t logger;
-
 	maybe_time_init();
 
-	maybe_logger_init(&logger, MAYBE_LOGGER_LOG_LEVEL_DEBUG, MAYBE_LOGGER_PLATFORM_TYPE_CONSOLE, NULL);
+	MAYBE_LOGGER_INIT(MAYBE_LOGGER_LOG_LEVEL_DEBUG, MAYBE_LOGGER_PLATFORM_TYPE_CONSOLE, NULL);
 
-	MAYBE_LOGGER_DEBUG_WRITE(&logger, "Initializing engine");
+	MAYBE_DEBUG_LOG("Initializing engine");
 
-	application_init(&logger);
+	/*
+	if (!glfwInit()) {
+		MAYBE_LOGGER_ERROR_WRITE(&logger, "GLFW Failed to init");
+		goto l_cleanup;
+	}
 
-	maybe_logger_free(&logger);
+	GLFWwindow* window = glfwCreateWindow(640, 480, "My Title", NULL, NULL);
+	if (!window) {
+		MAYBE_LOGGER_ERROR_WRITE(&logger, "Failed to create window");
+		goto l_cleanup;
+	}
+
+	while (!glfwWindowShouldClose(window)) {
+		glfwPollEvents();
+	}
+	*/
+
+
+	application_init();
+
+l_cleanup:
+	MAYBE_LOGGER_FREE();
+
+	glfwTerminate();
 
 	return 0;
 }

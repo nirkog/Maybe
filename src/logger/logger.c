@@ -21,6 +21,11 @@ static maybe_logger_platform_t logger_platforms[] = {
 	[MAYBE_LOGGER_PLATFORM_TYPE_CONSOLE] 	= { maybe_logger_platforms_console_init, maybe_logger_platforms_console_write, maybe_logger_platforms_console_free  },
 };
 
+/* @TODO global logger */
+/* @TODO Add types (unsigned, hex) */
+
+maybe_logger_t g_maybe_logger;
+
 /*
  * @brief The prefix prompts that will appear for every message in a given log level
  * */
@@ -193,13 +198,15 @@ uint32_t replace_argument_references_with_values(
 					break;
 				}
 				
-				i += 3;
+				i += 4;
 				current_reference++;
+
+				continue;
 			}
-		} else {
-			*formatted_string = format[i];
-			formatted_string++;
-		}
+		} 
+
+		*formatted_string = format[i];
+		formatted_string++;
 	}
 
 	return (uint32_t)(formatted_string - start);
