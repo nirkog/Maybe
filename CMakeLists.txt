@@ -16,6 +16,10 @@ add_library(maybe_lib STATIC
 	src/time/time.c
 	src/common/list/list.c
 	src/common/map/map.c
+	src/common/vector/vector.c
+	src/ecs/ecs.c
+	src/ecs/archetype.c
+	src/ecs/system.c
 )
 
 target_include_directories(maybe_lib PUBLIC

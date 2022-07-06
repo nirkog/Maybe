@@ -1,39 +1,69 @@
 #include <stdio.h>
 
-#include <logger/logger.h>
-#include <common/map/map.h>
 #include <common/common.h>
 #include <common/error.h>
+#include <logger/logger.h>
+#include <common/map/map.h>
+#include <common/vector/vector.h>
+#include <ecs/ecs.h>
+#include <ecs/system.h>
 
 typedef struct {
-	uint32_t math;
-	uint32_t english;
-} grade_t;
+	float x;
+	float y;
+} position_t;
 
-int application_init() {
-	maybe_map_t map;
-	grade_t johx_grade = { 95, 80 };
-	grade_t john_grade = { 64, 75 };
-	grade_t johann_grade = { 82, 93 };
-	grade_t* grade = NULL;
-	maybe_error_t error;
+typedef struct {
+	uint8_t r;
+	uint8_t g;
+	uint8_t b;
+} color_t;
 
+MAYBE_DEFINE_COMPONENT_TYPE(position_t)
+MAYBE_DEFINE_COMPONENT_TYPE(color_t)
+
+void test(maybe_system_t* system) {
+	maybe_system_component_iterator_t iterator;
+	color_t* color;
+	uint32_t i = 2;
+
+	maybe_system_init_component_iterator(system, MAYBE_COMPONENT_ID(color_t), &iterator);
+
+	while (iterator.current_component_pointer) {
+		color = (color_t*)iterator.current_component_pointer;	
+		if (color->r == 0) color->r = 1;
+		color->r *= i;
+
+		MAYBE_DEBUG_LOG("{0i}", color->r);
+
+		maybe_system_component_iterator_get_next_component(system, &iterator);
+		
+		i++;
+	}	
+}
+
+int application_init(void) {
+	maybe_world_t world;
+	maybe_entity_t entity;
+	uint32_t i;
+ 
 	MAYBE_DEBUG_LOG("Initializing application");
 
-	maybe_map_init(&map, sizeof(grade_t), 10, maybe_map_default_hash_function);
+	maybe_world_init(&world);
 
-	maybe_map_set(&map, (void*)"John", 4, &john_grade);
-	maybe_map_set(&map, (void*)"Johann", 6, &johann_grade);
-	maybe_map_set(&map, (void*)"Johx", 4, &johx_grade);
+	MAYBE_REGISTER_COMPONENT_TYPE(&world, position_t);
+	MAYBE_REGISTER_COMPONENT_TYPE(&world, color_t);
 
-	maybe_map_remove(&map, (void*)"John", 4);
+	maybe_world_register_system(&world, &test, 1, MAYBE_COMPONENT_ID(color_t));
 
-	error = maybe_map_get(&map, (void*)"Johx", 4, (void**)&grade);
-	if (grade) {
-		MAYBE_DEBUG_LOG("Got math: {0i}, english: {1i}", grade->math, grade->english);
+	maybe_world_add_entity(&world, 2, &entity, MAYBE_COMPONENT_ID(position_t), MAYBE_COMPONENT_ID(color_t));
+	maybe_world_add_entity(&world, 2, &entity, MAYBE_COMPONENT_ID(position_t), MAYBE_COMPONENT_ID(color_t));
+
+	for (i = 0; i < 10; i++) {
+		maybe_world_update(&world);
 	}
 
-	maybe_map_free(&map);
+	maybe_world_free(&world);
 
 	return 0;
 }

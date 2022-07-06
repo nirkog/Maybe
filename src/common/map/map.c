@@ -24,6 +24,11 @@ maybe_error_t maybe_map_init(
 		goto l_cleanup;
 	}
 
+	/* Set a default capacity, if no capacity was given */
+	if (0 == capacity) {
+		capacity = MAYBE_MAP_DEFAULT_CAPACITY;
+	}
+
 	map->hash_function = hash_function;
 	map->capacity = capacity;
 	map->element_size = element_size;

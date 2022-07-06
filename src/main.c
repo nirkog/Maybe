@@ -8,7 +8,9 @@
 #include "time/time.h"
 #include "common/map/map.h"
 
-extern int application_init();
+extern int application_init(void);
+
+/* @TODO Create a CHECK_ERROR macro for calling a function and checking for error in return value */
 
 int main() {
 	maybe_time_init();

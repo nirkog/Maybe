@@ -3,8 +3,8 @@
 
 #include "time.h"
 
-uint64_t init_time_ns = 0;
-uint64_t init_time_seconds = 0;
+static uint64_t init_time_ns = 0;
+static uint64_t init_time_seconds = 0;
 
 void maybe_time_init() {
 	struct timespec ts;

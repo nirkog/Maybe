@@ -15,3 +15,4 @@ target_compile_options(maybe_sandbox PRIVATE
 	-g
 )
 
+set(CMAKE_C_COMPILER /usr/bin/clang)

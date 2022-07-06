@@ -198,7 +198,7 @@ uint32_t replace_argument_references_with_values(
 					break;
 				}
 				
-				i += 4;
+				i += 3;
 				current_reference++;
 
 				continue;
