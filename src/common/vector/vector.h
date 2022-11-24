@@ -50,7 +50,7 @@ maybe_error_t maybe_vector_remove(
 );
 
 /*
- * @breif Free a vector's resources
+ * @brief Free a vector's resources
  *
  * @param vector The vector to be freed
  * */
@@ -58,10 +58,31 @@ maybe_error_t maybe_vector_free(
 	maybe_vector_t* vector
 );
 
+/*
+ * @brief Resize a vector, allocate more memory if needed
+ *
+ * @param vector A vector
+ * @param length The new length in elements
+ * */
+maybe_error_t maybe_vector_resize(
+	maybe_vector_t* vector,
+	uint32_t length
+);
+
 #define MAYBE_VECTOR_ELEMENT(vector, type, index) (((type*)(vector).elements)[index])
 #define MAYBE_VECTOR_PTR_ELEMENT(vector, type, index) (((type*)(vector)->elements)[index])
+
+#define MAYBE_VECTOR_DATA(vector, type) ((type*)((vector).elements))
+#define MAYBE_VECTOR_PTR_DATA(vector, type) ((type*)((vector)->elements))
 
 #define MAYBE_VECTOR_ELEMENT_VOID_PTR(vector, index) ((void*)(((uint8_t*)(vector).elements + (index * (vector).element_size))))
 #define MAYBE_VECTOR_PTR_ELEMENT_VOID_PTR(vector, index) ((void*)(((uint8_t*)(vector)->elements + (index * (vector)->element_size))))
 
 #define MAYBE_VECTOR(type) maybe_vector_t
+#define MAYBE_VECTOR_PTR(type) maybe_vector_t*
+
+#define MAYBE_VECTOR_EMPTY(vector) ((vector).length == 0)
+#define MAYBE_VECTOR_PTR_EMPTY(vector) ((vector)->length == 0)
+
+#define MAYBE_VECTOR_INIT(vector, type) (maybe_vector_init(&vector, sizeof(type), 0))
+#define MAYBE_VECTOR_PTR_INIT(vector, type) (maybe_vector_init(&vector, sizeof(type), 0))

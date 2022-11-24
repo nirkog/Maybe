@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 
-#include "console_logger.h"
+#include "unix_console_logger.h"
 
 #define EMPTY_BACKGROUND_FOREGROUND_COLOR_ESCAPE_SEQUENCE_SIZE (14)
 

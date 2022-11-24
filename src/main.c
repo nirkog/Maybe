@@ -1,48 +1,48 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
+#include "common/common.h"
 #include "logger/logger.h"
 #include "time/time.h"
-#include "common/map/map.h"
+#include "graphics/window.h"
+#include "graphics/graphics.h"
+#include "utils/io.h"
 
 extern int application_init(void);
 
-/* @TODO Create a CHECK_ERROR macro for calling a function and checking for error in return value */
-
 int main() {
+	maybe_error_t result = MAYBE_ERROR_UNINITIALIZED;
+	maybe_window_t window;
+
 	maybe_time_init();
 
-	MAYBE_LOGGER_INIT(MAYBE_LOGGER_LOG_LEVEL_DEBUG, MAYBE_LOGGER_PLATFORM_TYPE_CONSOLE, NULL);
-
-	MAYBE_DEBUG_LOG("Initializing engine");
-
-	/*
-	if (!glfwInit()) {
-		MAYBE_LOGGER_ERROR_WRITE(&logger, "GLFW Failed to init");
+	/* Initialize logger */
+	result = MAYBE_LOGGER_INIT(MAYBE_LOGGER_LOG_LEVEL_DEBUG, MAYBE_LOGGER_PLATFORM_TYPE_CONSOLE, NULL);
+	if (IS_FAILURE(result)) {
+		MAYBE_ERROR_LOG("Maybe fatal error: failed to initialize logger");
 		goto l_cleanup;
 	}
 
-	GLFWwindow* window = glfwCreateWindow(640, 480, "My Title", NULL, NULL);
-	if (!window) {
-		MAYBE_LOGGER_ERROR_WRITE(&logger, "Failed to create window");
+	/* Initialize graphics */
+	MAYBE_INFO_LOG("Initializing graphics");
+	result = maybe_graphics_init();
+	if (IS_FAILURE(result)) {
+		MAYBE_ERROR_LOG("Failed to initialize graphics, error code {0u}", (uint32_t)result);
 		goto l_cleanup;
 	}
-
-	while (!glfwWindowShouldClose(window)) {
-		glfwPollEvents();
-	}
-	*/
-
 
 	application_init();
 
+	while (!maybe_graphics_should_shutdown()) {
+		maybe_graphics_poll_events();
+        maybe_graphics_draw_frame();
+	}
+
+	MAYBE_INFO_LOG("Shutting down");
+
 l_cleanup:
 	MAYBE_LOGGER_FREE();
+	maybe_graphics_terminate();
 
-	glfwTerminate();
-
-	return 0;
+	return result;
 }

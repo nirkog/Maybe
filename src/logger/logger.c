@@ -4,14 +4,16 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "logger.h"
 #include "logger_internal.h"
 
 #include "common/common.h"
-#include "platforms/console/console_logger.h"
 #include "platforms/file/file_logger.h"
 #include "time/time.h"
+
+/* @TODO Add engine/application log tags */
 
 /*
  * @brief The implementations of the current logging platforms
@@ -21,19 +23,16 @@ static maybe_logger_platform_t logger_platforms[] = {
 	[MAYBE_LOGGER_PLATFORM_TYPE_CONSOLE] 	= { maybe_logger_platforms_console_init, maybe_logger_platforms_console_write, maybe_logger_platforms_console_free  },
 };
 
-/* @TODO global logger */
-/* @TODO Add types (unsigned, hex) */
-
 maybe_logger_t g_maybe_logger;
 
 /*
  * @brief The prefix prompts that will appear for every message in a given log level
  * */
 static const char* log_level_prompts[] = {
-	[MAYBE_LOGGER_LOG_LEVEL_DEBUG] 		= "[DEBUG] ",	
-	[MAYBE_LOGGER_LOG_LEVEL_INFO] 		= "[INFO] ",	
-	[MAYBE_LOGGER_LOG_LEVEL_WARNING] 	= "[WARNING] ",	
-	[MAYBE_LOGGER_LOG_LEVEL_ERROR] 		= "[ERROR] ",	
+	[MAYBE_LOGGER_LOG_LEVEL_DEBUG] 		= "[DEBUG] ",
+	[MAYBE_LOGGER_LOG_LEVEL_INFO] 		= "[INFO] ",
+	[MAYBE_LOGGER_LOG_LEVEL_WARNING] 	= "[WARNING] ",
+	[MAYBE_LOGGER_LOG_LEVEL_ERROR] 		= "[ERROR] ",
 };
 
 maybe_error_t maybe_logger_init(
@@ -114,8 +113,7 @@ bool retrieve_argument_references(
 	argument_refernce_t* references,
 	uint8_t* reference_count_result,
 	uint8_t* argument_types,
-	uint8_t* argument_count,
-	uint32_t* new_size
+	uint8_t* argument_count
 ) {
 	bool result = false;
 	uint8_t reference_count = 0;
@@ -139,20 +137,6 @@ bool retrieve_argument_references(
 					*argument_count = references[reference_count].index + 1;
 				}
 
-				switch (references[reference_count].type) {
-				case 'i':
-					*new_size += 5;
-					break;
-				case 'f':
-					*new_size += 15;
-					break;
-				case 'l':
-					*new_size += 20;
-					break;
-				default:
-					goto l_cleanup;
-				}
-
 				reference_count++;
 				if (reference_count >= MAX_FORMAT_ARGUMENT_REFERENCE_COUNT) {
 					goto l_cleanup;
@@ -169,15 +153,48 @@ l_cleanup:
 	return result;
 }
 
+uint32_t calculate_formatted_size(
+	uint32_t format_size,
+	argument_refernce_t* references,
+	uint32_t reference_count,
+	argument_value_t* arguments
+) {
+	uint32_t formatted_size = format_size - (reference_count * 4);
+	uint32_t i;
+
+	for (i = 0; i < reference_count; i++) {
+		switch (references[i].type) {
+		case UNSIGNED_INT_FORMAT_SPECIFIER:
+			formatted_size += ceil(log((double)arguments[i]._uint32_t));
+			break;
+		case DOUBLE_FORMAT_SPECIFIER:
+			formatted_size += ceil(log(arguments[i]._double)) + 4 + 1;
+			break;
+		case UNSIGNED_LONG_FORMAT_SPECIFIER:
+			formatted_size += ceil(log((double)arguments[i]._uint64_t));
+			break;
+		case STRING_FORMAT_SPECIFIER:
+			formatted_size += strlen(arguments[i]._char_pointer);
+			break;
+		case HEX_FORMAT_SPECIFIER:
+			formatted_size += floor(log2((double)arguments[i]._uint32_t) / 4.0f) + 2;
+			break;
+		case LONG_HEX_FORMAT_SPECIFIER:
+			formatted_size += floor(log2((double)arguments[i]._uint64_t) / 4.0f) + 2;
+			break;
+		}
+	}
+
+	return formatted_size;
+}
+
 uint32_t replace_argument_references_with_values(
 	uint8_t* format,
 	uint32_t size,
 	argument_refernce_t* references,
 	uint8_t reference_count,
 	uint8_t* formatted_string,
-	uint32_t* int_argument_values,
-	uint64_t* long_argument_values,
-	double* float_argument_values
+	argument_value_t* argument_values
 ) {
 	uint32_t i;
 	uint8_t current_reference = 0;
@@ -187,18 +204,27 @@ uint32_t replace_argument_references_with_values(
 		if (current_reference < reference_count) {
 			if (i == references[current_reference].position) {
 				switch (references[current_reference].type) {
-				case 'i':
-					formatted_string += sprintf((char*)formatted_string, "%d", (int)int_argument_values[references[current_reference].index]);
+				case UNSIGNED_INT_FORMAT_SPECIFIER:
+					formatted_string += sprintf((char*)formatted_string, "%d", argument_values[references[current_reference].index]._uint32_t);
 					break;
-				case 'f':
-					formatted_string += sprintf((char*)formatted_string, "%f", (float)float_argument_values[references[current_reference].index]);
+				case DOUBLE_FORMAT_SPECIFIER:
+					formatted_string += sprintf((char*)formatted_string, "%.4f", argument_values[references[current_reference].index]._double);
 					break;
-				case 'l':
-					formatted_string += sprintf((char*)formatted_string, "%lld", (long long)long_argument_values[references[current_reference].index]);
+				case UNSIGNED_LONG_FORMAT_SPECIFIER:
+					formatted_string += sprintf((char*)formatted_string, "%llu", argument_values[references[current_reference].index]._uint64_t);
+					break;
+				case STRING_FORMAT_SPECIFIER:
+					formatted_string += sprintf((char*)formatted_string, "%s", argument_values[references[current_reference].index]._char_pointer);
+					break;
+				case HEX_FORMAT_SPECIFIER:
+					formatted_string += sprintf((char*)formatted_string, "0x%x", argument_values[references[current_reference].index]._uint32_t);
+					break;
+				case LONG_HEX_FORMAT_SPECIFIER:
+					formatted_string += sprintf((char*)formatted_string, "0x%llx", argument_values[references[current_reference].index]._uint64_t);
 					break;
 				}
-				
-				i += 3;
+
+				i += 3; /* Skip the argument reference characters in the format string */
 				current_reference++;
 
 				continue;
@@ -221,12 +247,10 @@ bool format_string(
 	va_list args
 ) {
 	bool result = false;
-	uint32_t i, new_size = size;
+	uint32_t i, formatted_size = size;
 	uint8_t* _formatted_string = NULL;
 	uint8_t argument_count = 0;
-	uint32_t int_argument_values[MAX_FORMAT_ARGUMENT_COUNT] = { 0 };
-	uint64_t long_argument_values[MAX_FORMAT_ARGUMENT_COUNT] = { 0 };
-	double float_argument_values[MAX_FORMAT_ARGUMENT_COUNT] = { 0.0f };
+	argument_value_t argument_values[MAX_FORMAT_ARGUMENT_COUNT] = { 0 };
 	uint8_t types[MAX_FORMAT_ARGUMENT_COUNT] = { 0 };
 	uint32_t final_size = 0;
 	argument_refernce_t references[MAX_FORMAT_ARGUMENT_REFERENCE_COUNT] = { { 0 } };
@@ -234,7 +258,7 @@ bool format_string(
 
 	/* @TODO Optimize and tidy this */
 
-	result = retrieve_argument_references(format, size, references, &reference_count, types, &argument_count, &new_size);
+	result = retrieve_argument_references(format, size, references, &reference_count, types, &argument_count);
 	if (!result) {
 		goto l_cleanup;
 	}
@@ -242,28 +266,38 @@ bool format_string(
 	/* Extract arguments */
 	for (i = 0; i < argument_count; i++) {
 		switch (types[i]) {
-		case 'i':
-			int_argument_values[i] = va_arg(args, uint32_t);
+		case UNSIGNED_INT_FORMAT_SPECIFIER:
+			argument_values[i]._uint32_t = va_arg(args, uint32_t);
 			break;
-		case 'f':
-			float_argument_values[i] = va_arg(args, double);
+		case DOUBLE_FORMAT_SPECIFIER:
+			argument_values[i]._double = va_arg(args, double);
 			break;
-		case 'l':
-			long_argument_values[i] = va_arg(args, uint64_t);
+		case UNSIGNED_LONG_FORMAT_SPECIFIER:
+			argument_values[i]._uint64_t = va_arg(args, uint64_t);
+			break;
+		case STRING_FORMAT_SPECIFIER:
+			argument_values[i]._char_pointer = va_arg(args, char*);
+			break;
+		case HEX_FORMAT_SPECIFIER :
+			argument_values[i]._uint32_t = va_arg(args, uint32_t);
+			break;
+		case LONG_HEX_FORMAT_SPECIFIER :
+			argument_values[i]._uint64_t = va_arg(args, uint64_t);
 			break;
 		default:
-			int_argument_values[i] = va_arg(args, uint32_t);
-			break;
+			goto l_cleanup;
 		}
 	}
 
-	new_size += strlen(log_level_prompts[log_level]); /* Prompt size */
-	new_size += TIME_PROMPT_SIZE; /* Time size */
-	new_size += 1; /* Newline */
+	formatted_size = calculate_formatted_size(size, references, reference_count, argument_values);
+
+	formatted_size += strlen(log_level_prompts[log_level]); /* Prompt size */
+	formatted_size += TIME_PROMPT_SIZE; /* Time size */
+	formatted_size += 1; /* Newline */
 
 	/* Allocate memory for the formatted message */
-	_formatted_string = (uint8_t*)malloc(new_size + 1);
-	_formatted_string[new_size] = '\0';
+	_formatted_string = (uint8_t*)malloc(formatted_size + 1);
+	_formatted_string[formatted_size] = '\0';
 
 	/* Copy the prefix to the message */
 	memcpy(_formatted_string, log_level_prompts[log_level], strlen(log_level_prompts[log_level]));
@@ -278,7 +312,8 @@ bool format_string(
 	);
 	_formatted_string += TIME_PROMPT_SIZE;
 
-	final_size = replace_argument_references_with_values(format, size, references, reference_count, _formatted_string, int_argument_values, long_argument_values, float_argument_values);
+
+	final_size = replace_argument_references_with_values(format, size, references, reference_count, _formatted_string, argument_values);
 	_formatted_string[final_size] = '\n';
 	_formatted_string[final_size + 1] = '\0';
 
@@ -287,7 +322,7 @@ bool format_string(
 
 
 	/* Transfer the result */
-	*formatted_string_size = new_size;
+	*formatted_string_size = formatted_size;
 	*formatted_string = _formatted_string;
 
 	result = true;

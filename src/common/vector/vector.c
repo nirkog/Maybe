@@ -10,6 +10,8 @@
 
 #include "vector.h"
 
+/* @TODO Add a debug validation layer (for example alert on unfreed vectors) */
+
 maybe_error_t maybe_vector_init(
 	maybe_vector_t* vector,
 	uint32_t element_size,
@@ -66,7 +68,7 @@ maybe_error_t maybe_vector_push(
 	/* Initialize element */
 	if (element) {
 		memcpy(
-			(void*)((uint8_t*)(vector->elements + (vector->length * vector->element_size))),
+			(void*)((uint8_t*)vector->elements + (vector->length * vector->element_size)),
 			element,
 			vector->element_size
 		);
@@ -98,8 +100,8 @@ maybe_error_t maybe_vector_remove(
 	
 	/* Move all elements after the selected element back one spot */
 	memcpy(
-		(void*)((uint8_t*)(vector->elements + (index * vector->element_size))),
-		(void*)((uint8_t*)(vector->elements + ((index + 1) * vector->element_size))),
+		(void*)((uint8_t*)vector->elements + (index * vector->element_size)),
+		(void*)((uint8_t*)vector->elements + ((index + 1) * vector->element_size)),
 		(vector->length - index - 1) * vector->element_size
 	);
 
@@ -122,6 +124,35 @@ maybe_error_t maybe_vector_free(
 
 	if (vector->elements) {
 		free(vector->elements);
+	}
+
+	result = MAYBE_ERROR_SUCCESS;
+l_cleanup:
+	return result;
+}
+
+maybe_error_t maybe_vector_resize(
+	maybe_vector_t* vector,
+	uint32_t length
+) {
+	maybe_error_t result = MAYBE_ERROR_UNINITIALIZED;
+
+	if (NULL == vector) {
+		result = MAYBE_ERROR_VECTOR_NULL_PARAM;
+		goto l_cleanup;
+	}
+
+	/* Resize */
+	vector->length = length;
+
+	/* Allocate more memory if needed */
+	if (vector->length >= vector->capacity) {
+		vector->capacity = vector->length * 2;
+		vector->elements = realloc(vector->elements, vector->capacity * vector->element_size);
+		if (NULL == vector->elements) {
+			result = MAYBE_ERROR_VECTOR_ALLOCATION_FAILED;
+			goto l_cleanup;
+		}
 	}
 
 	result = MAYBE_ERROR_SUCCESS;

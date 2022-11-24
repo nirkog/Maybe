@@ -34,7 +34,7 @@ void test(maybe_system_t* system) {
 		if (color->r == 0) color->r = 1;
 		color->r *= i;
 
-		MAYBE_DEBUG_LOG("{0i}", color->r);
+		//MAYBE_DEBUG_LOG("{0i}", color->r);
 
 		maybe_system_component_iterator_get_next_component(system, &iterator);
 		
@@ -47,7 +47,7 @@ int application_init(void) {
 	maybe_entity_t entity;
 	uint32_t i;
  
-	MAYBE_DEBUG_LOG("Initializing application");
+	MAYBE_INFO_LOG("Initializing application");
 
 	maybe_world_init(&world);
 

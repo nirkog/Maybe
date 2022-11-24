@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdlib.h>
+
 #include "error.h"
 #include "logger/logger.h"
 
@@ -12,3 +14,18 @@
 #endif
 
 #define MALLOC_T(type, count) ((type*)(malloc(sizeof(type) * count)))
+
+#define LENGTH(arr) (sizeof(arr) / sizeof(arr[0]))
+
+#define CLEANUP_ON_FAILURE(call) result = (call); \
+								 if (MAYBE_ERROR_SUCCESS != result) { \
+									 goto l_cleanup; \
+								 } \
+
+#define GLFW_INCLUDE_VULKAN
+
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4101)
+#pragma warning( pop )
+#endif

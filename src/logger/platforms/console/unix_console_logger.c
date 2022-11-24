@@ -7,8 +7,8 @@
 
 #include "common/error.h"
 
-#include "console_logger.h"
-#include "console_logger_internal.h"
+#include "unix_console_logger.h"
+#include "unix_console_logger_internal.h"
 
 log_level_color_t log_level_colors[] = {
 	[MAYBE_LOGGER_LOG_LEVEL_DEBUG] 		= { NULL, "34" },	
@@ -34,6 +34,7 @@ maybe_error_t maybe_logger_platforms_console_write(
 	maybe_error_t result = MAYBE_ERROR_UNINITIALIZED;
 	log_level_color_t colors = log_level_colors[log_level];
 	uint8_t* color_sequence = NULL;
+	uint32_t i, last_index;
 
 	/* Generate the color escape sequence */
 	if (!get_color_escape_sequence(colors.background, colors.foreground, &color_sequence)) {
@@ -41,7 +42,19 @@ maybe_error_t maybe_logger_platforms_console_write(
 		goto l_cleanup;
 	}
 
-	printf("%s%s%s", color_sequence, data, RESET_COLORS_ESCAPE_SEQUENCE);
+	for (i = 0, last_index = 0; i < size; i++) {
+		if (data[i] == '\n') {
+			data[i] = '\0';
+			printf("%s%s%s", color_sequence, (char*)&data[last_index], RESET_COLORS_ESCAPE_SEQUENCE);
+			last_index = i + 1;
+
+			printf("\n");
+		}
+	}
+
+	if (last_index != size) {
+		printf("%s%s%s", color_sequence, (char*)&data[last_index], RESET_COLORS_ESCAPE_SEQUENCE);
+	}
 
 	result = MAYBE_ERROR_SUCCESS;
 l_cleanup:
